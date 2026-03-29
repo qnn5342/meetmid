@@ -1,65 +1,225 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { useAppStore } from "@/store/useAppStore";
+import { calculateMidpoint } from "@/lib/midpoint";
+import { reverseGeocode } from "@/lib/goong";
+import LocationInput from "@/components/input/LocationInput";
+import PlaceList from "@/components/results/PlaceList";
+import { Button } from "@/components/ui/button";
+import type { Place } from "@/types";
+
+const MapView = dynamic(() => import("@/components/map/MapView"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+      <span className="text-muted-foreground text-sm">Đang tải bản đồ...</span>
+    </div>
+  ),
+});
+
+export default function HomePage() {
+  const locations = useAppStore((s) => s.locations);
+  const view = useAppStore((s) => s.view);
+  const isSearching = useAppStore((s) => s.isSearching);
+  const setView = useAppStore((s) => s.setView);
+  const setMidpoint = useAppStore((s) => s.setMidpoint);
+  const setIsSearching = useAppStore((s) => s.setIsSearching);
+  const setPlaces = useAppStore((s) => s.setPlaces);
+  const addLocation = useAppStore((s) => s.addLocation);
+  const setMyLocation = useAppStore((s) => s.setMyLocation);
+  const radius = useAppStore((s) => s.radius);
+  const setRadius = useAppStore((s) => s.setRadius);
+  const [pinningIndex, setPinningIndex] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const canSearch = locations.length >= 2;
+
+  const handleGps = useCallback(
+    (index: number) => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          const label = await reverseGeocode(lat, lng);
+          const loc = {
+            id: crypto.randomUUID(),
+            lat,
+            lng,
+            label,
+            source: "gps" as const,
+          };
+          if (index === 0) {
+            setMyLocation(loc);
+          } else {
+            addLocation(loc);
+          }
+        },
+        () =>
+          alert("Không thể lấy vị trí GPS. Vui lòng cho phép truy cập vị trí.")
+      );
+    },
+    [setMyLocation, addLocation]
+  );
+
+  const handleMapClick = useCallback(
+    async (lat: number, lng: number) => {
+      if (pinningIndex === null) return;
+      const label = await reverseGeocode(lat, lng);
+      const loc = {
+        id: crypto.randomUUID(),
+        lat,
+        lng,
+        label,
+        source: "pin" as const,
+      };
+      if (pinningIndex === 0) {
+        setMyLocation(loc);
+      } else {
+        addLocation(loc);
+      }
+      setPinningIndex(null);
+    },
+    [pinningIndex, setMyLocation, addLocation]
+  );
+
+  const handleSearch = useCallback(async () => {
+    if (!canSearch) return;
+
+    const mid = calculateMidpoint(locations);
+    setMidpoint(mid);
+    setIsSearching(true);
+
+    try {
+      const store = useAppStore.getState();
+      const params = new URLSearchParams({
+        lat: mid.lat.toString(),
+        lng: mid.lng.toString(),
+        radius: store.radius.toString(),
+        type: store.filter,
+        limit: "50",
+      });
+
+      const res = await fetch(`/api/search?${params}`);
+      const data = await res.json();
+
+      if (data.places) {
+        setPlaces(data.places as Place[]);
+        setView("results");
+      } else {
+        alert(data.error || "Không tìm thấy kết quả");
+      }
+    } catch {
+      alert("Tìm kiếm thất bại. Vui lòng thử lại.");
+    } finally {
+      setIsSearching(false);
+    }
+  }, [canSearch, locations, setMidpoint, setIsSearching, setPlaces, setView]);
+
+  const handleBack = () => {
+    setView("input");
+    setMidpoint(null);
+    setPlaces([]);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <header className="bg-card border-b px-4 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          {view === "results" && (
+            <button onClick={handleBack} className="text-lg mr-1">
+              ←
+            </button>
+          )}
+          <h1 className="text-lg font-bold text-[#FDF5DA]">
+            Meet<span className="text-[#FFD94C]">Mid</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        {view === "results" && (
+          <span className="text-xs text-muted-foreground">
+            {useAppStore.getState().places.length} kết quả
+          </span>
+        )}
+      </header>
+
+      {/* Map */}
+      <div className="flex-1 relative min-h-0">
+        <MapView
+          onMapClick={pinningIndex !== null ? handleMapClick : undefined}
+        />
+
+        {/* Pinning indicator */}
+        {pinningIndex !== null && (
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-[#FFD94C] text-[#15333B] text-xs font-medium px-3 py-1.5 rounded-full shadow-lg z-[1000]">
+            Chạm vào bản đồ để chọn vị trí #{pinningIndex + 1}
+            <button
+              onClick={() => setPinningIndex(null)}
+              className="ml-2 font-bold"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom panel */}
+      <div className="bg-card border-t shrink-0 max-h-[50vh] overflow-y-auto">
+        {view === "input" ? (
+          <div className="p-4 space-y-3">
+            <LocationInput
+              index={0}
+              placeholder="Vị trí của bạn"
+              onRequestGps={() => handleGps(0)}
+              onRequestPin={() => setPinningIndex(0)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <LocationInput
+              index={1}
+              placeholder="Vị trí người kia"
+              onRequestGps={() => handleGps(1)}
+              onRequestPin={() => setPinningIndex(1)}
+            />
+
+            {/* Radius selector */}
+            {mounted && <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Bán kính:</span>
+              <div className="flex bg-[#15333B] rounded-lg p-0.5 border border-[#3E5E63]">
+                {[
+                  { value: 500, label: "500m" },
+                  { value: 1000, label: "1km" },
+                  { value: 2000, label: "2km" },
+                  { value: 5000, label: "5km" },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    onClick={() => setRadius(r.value)}
+                    className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                      radius === r.value
+                        ? "bg-[#FFD94C] text-[#15333B] font-medium"
+                        : "text-[#9CB5B9] hover:text-[#F0F0F0]"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>}
+
+            <Button
+              onClick={handleSearch}
+              disabled={!canSearch || isSearching}
+              className="w-full"
+              size="lg"
+            >
+              {isSearching ? "Đang tìm..." : "Tìm quán"}
+            </Button>
+          </div>
+        ) : (
+          <PlaceList onReSearch={handleSearch} />
+        )}
+      </div>
     </div>
   );
 }

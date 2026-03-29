@@ -123,7 +123,7 @@ Host mở app → Tạo phòng → Nhận share link
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Google Maps API cost | Cao nếu nhiều user | Rate limiting, cache kết quả, dùng free tier tối đa |
+| Goong API quota (1000 req/ngày) | Hết quota nếu viral | Cache results, debounce autocomplete, monitor usage |
 | GPS không chính xác | Midpoint lệch | Cho phép user adjust pin sau khi GPS fill |
 | Google Maps link format thay đổi | Parse fail | Regex flexible + fallback về text search |
 | Group member không bấm link | Flow bị stuck | Fallback: host pin hộ |

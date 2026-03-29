@@ -2,16 +2,21 @@
 
 ## 1. Tech Stack Decision
 
+> **Note:** Đã pivot từ Google Maps sang Leaflet + Goong vì Google Maps API bị chặn/hạn chế tại VN.
+
 | Layer | Choice | Lý do |
 |-------|--------|-------|
 | **Frontend** | Next.js 15 (App Router) | Web app mobile-first, không cần app store approval, share link dễ, SSR cho SEO/OG tags |
 | **UI** | Tailwind CSS + shadcn/ui | Nhanh, responsive, component library tốt |
-| **Map** | Google Maps JavaScript API + @vis.gl/react-google-maps | Official React wrapper, full control |
-| **Places** | Google Places API (New) | Autocomplete + nearby search |
+| **Map** | Leaflet + OpenStreetMap + react-leaflet | Free, không cần API key, hoạt động tốt tại VN |
+| **Geocoding + Autocomplete** | Goong.io | Công ty VN, data VN chuẩn (hẻm/ngõ), autocomplete tiếng Việt tốt |
+| **Places Search** | Goong Places API | Nearby search có rating, 1000 req/ngày free |
 | **Realtime** | Supabase Realtime | Group flow sync, free tier generous (500 concurrent) |
 | **Database** | Supabase PostgreSQL | Lưu rooms cho group flow |
 | **Hosting** | Vercel | Zero-config deploy cho Next.js |
 | **State** | Zustand | Lightweight, không boilerplate |
+
+### Cost: $0/tháng (1000 req/ngày free từ Goong)
 
 ## 2. System Architecture
 
@@ -34,9 +39,9 @@
           ┌───────────┼───────────┐
           ▼           ▼           ▼
    ┌────────────┐ ┌────────┐ ┌──────────┐
-   │ Google Maps│ │Google  │ │ Supabase │
-   │ JS API     │ │Places  │ │ Realtime │
-   │            │ │API     │ │ + DB     │
+   │  Leaflet + │ │Goong.io│ │ Supabase │
+   │ OpenStreet │ │Places +│ │ Realtime │
+   │  Map tiles │ │Geocode │ │ + DB     │
    └────────────┘ └────────┘ └──────────┘
 ```
 
@@ -171,6 +176,7 @@ function parseGoogleMapsLink(url: string): LatLng | null {
 | `/api/rooms/[code]` | GET | Lấy room info |
 | `/api/rooms/[code]/join` | POST | Join room + gửi location |
 | `/api/resolve-link` | POST | Resolve Google Maps short link → tọa độ |
+| `/api/search` | GET | Goong Places search (server-side, bảo vệ API key) |
 
 ## 6. Page Routes
 
@@ -180,20 +186,20 @@ function parseGoogleMapsLink(url: string): LatLng | null {
 | `/room/[code]` | Group mode — join room |
 | `/results` | Results page (map + list) — hoặc render trong cùng page |
 
-## 7. Google Maps API Usage & Cost Control
+## 7. API Usage & Cost Control
 
-| API | Usage | Free tier |
-|-----|-------|-----------|
-| Maps JavaScript API | Map display | $200 credit/month |
-| Places API (New) - Autocomplete | Text search input | $200 credit/month |
-| Places API (New) - Nearby Search | Tìm quán gần midpoint | $200 credit/month |
-| Geocoding API | Resolve addresses | $200 credit/month |
+| Service | Usage | Free tier | Paid |
+|---------|-------|-----------|------|
+| Leaflet + OSM tiles | Map display | Unlimited | N/A |
+| Goong Autocomplete | Tìm địa chỉ tiếng Việt | 1000 req/ngày | Theo gói |
+| Goong Geocoding | Chuyển địa chỉ → tọa độ | 1000 req/ngày | Theo gói |
+| Goong Places | Tìm quán gần midpoint | 1000 req/ngày | Theo gói |
+| Supabase | Group rooms | Free tier | $25/month |
 
 **Cost control:**
-- Cache Places results trong session (Zustand)
 - Debounce autocomplete (300ms)
-- Limit nearby search calls (chỉ khi user bấm "Tìm quán")
-- $200 free credit/month = ~khoảng 10,000-40,000 requests tuỳ API
+- Cache Places results trong Zustand (session-level)
+- 1000 req/ngày free = đủ cho MVP + soft launch
 
 ## 8. Project Structure
 
@@ -247,7 +253,8 @@ meetmid/
 ## 9. Environment Variables
 
 ```
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+GOONG_API_KEY=                # Server-side only (cho Places search)
+NEXT_PUBLIC_GOONG_MAPTILES_KEY=  # Client-side (cho autocomplete)
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```

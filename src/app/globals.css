@@ -49,38 +49,39 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* The1ight Brand — Dark Theme */
+  --background: #15333B;
+  --foreground: #F0F0F0;
+  --card: #214C54;
+  --card-foreground: #F0F0F0;
+  --popover: #214C54;
+  --popover-foreground: #F0F0F0;
+  --primary: #FFD94C;
+  --primary-foreground: #15333B;
+  --secondary: #214C54;
+  --secondary-foreground: #FDF5DA;
+  --muted: #214C54;
+  --muted-foreground: #9CB5B9;
+  --accent: #FFD94C;
+  --accent-foreground: #15333B;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: #3E5E63;
+  --input: #3E5E63;
+  --ring: #FFD94C;
+  --chart-1: #FFD94C;
+  --chart-2: #4E8770;
+  --chart-3: #EAB308;
+  --chart-4: #3E5E63;
+  --chart-5: #214C54;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #15333B;
+  --sidebar-foreground: #F0F0F0;
+  --sidebar-primary: #FFD94C;
+  --sidebar-primary-foreground: #15333B;
+  --sidebar-accent: #214C54;
+  --sidebar-accent-foreground: #FDF5DA;
+  --sidebar-border: #3E5E63;
+  --sidebar-ring: #FFD94C;
 }
 
 .dark {
