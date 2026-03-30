@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
+import PostHogProvider from "./PostHogProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -29,7 +31,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={`${inter.className} h-full`}>
-      <body className="h-full bg-background text-foreground">{children}</body>
+      <body className="h-full bg-background text-foreground">
+        <Suspense>
+          <PostHogProvider>{children}</PostHogProvider>
+        </Suspense>
+      </body>
     </html>
   );
 }
