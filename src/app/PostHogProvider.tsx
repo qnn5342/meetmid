@@ -2,14 +2,14 @@
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import posthog, { initPostHog } from "./posthog";
+import posthog from "./posthog";
 
 function PostHogPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (pathname) {
+    if (pathname && posthog.__loaded) {
       let url = window.origin + pathname;
       if (searchParams.toString()) {
         url += "?" + searchParams.toString();
@@ -26,10 +26,6 @@ export default function PostHogProvider({
 }: {
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    initPostHog();
-  }, []);
-
   return (
     <>
       <PostHogPageView />
